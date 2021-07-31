@@ -575,6 +575,48 @@ Check()
 		Logger.LogPass "python-xml package dependency resolved."
 	}
 
+	Check.CurlProxy()
+	{
+		#Check for root user curl configuration file.
+		Logger.LogInformation "Checking curl configuration."
+		CURL_CFG=~/.curlrc
+		if [ -f "$CURL_CFG" ]; then
+			Logger.LogInformation "Checking for curl configured proxy."
+			proxyVar="$(cat ~/.curlrc | grep "proxy=")"
+			if [ "${proxyVar}" != "" ]
+			then
+			{
+				Logger.LogWarning "Curl Proxy Enabled"
+				curlProxyEnabled=1
+			}
+			else
+			{
+				Logger.LogPass "Curl Proxy Not Enabled"
+				curlProxyEnabled=0
+			}
+			fi
+
+			Logger.LogInformation "Checking for curl configured HTTP1.0 proxy."
+			proxy10Var="$(cat ~/.curlrc | grep "proxy1.0=")"
+			if [ "${proxy10Var}" != "" ]
+			then
+			{
+				Logger.LogWarning "Curl HTTP Proxy Enabled"
+				curlProxy10Enabled=1
+			}
+			else
+			{
+				Logger.LogPass "Curl HTTP Proxy Not Enabled"
+				curlProxy10Enabled=0
+			}
+			fi
+		else 
+			Logger.LogPass "Custom CURL profile does not exist."
+			curlProxy10Enabled=0
+			curlProxyEnabled=0
+		fi
+	}
+
 	Check.Wireserver()
 	{
 		Logger.LogInformation "Checking connectivity to 'Wireserver' service."
@@ -610,7 +652,16 @@ Check()
 		local url="${3}"
 		local status="${4}"
 
-		Logger.LogInformation "Checking connectivity to '${service}' service."
+		if [ "${curlProxy10Enabled}" -eq "0" ] && [ "${curlProxyEnabled}" -eq "0" ]
+		then
+		{
+			Logger.LogInformation "Checking connectivity to '${service}' service."
+		}
+		else
+		{
+			Logger.LogInformation "Checking connectivity to '${service}' service using CURL configured proxy."
+		}
+		fi		
 		local response && response="$(curl --silent --output /dev/null --location --request "${verb}" "${url}" --write-out "%{http_code}\n")"
 		[ "${?}" -ne "0" ] && Logger.Exit Failure "Failed to connect to '${service}' service."
 		[ "x${response}" != "x${status}" ] && Logger.Exit Failure "Received from '${service}' service: 'HTTP/${response}'."
@@ -1689,6 +1740,7 @@ Main()
 
 				Check.Waagent
 				Check.PythonXMLReq
+				Check.CurlProxy
 				Check.Wireserver
 				Check.IMDS
 
