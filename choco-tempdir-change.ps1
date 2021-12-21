@@ -1,4 +1,4 @@
-﻿<#
+<#
     .SYNOPSIS
     Downloads and installs Chocolatey on the local machine.
 
@@ -434,9 +434,9 @@ if ($ChocolateyDownloadUrl) {
     [xml]$result = Request-String -Url $queryUrl -ProxyConfiguration $proxyConfig
     $ChocolateyDownloadUrl = $result.feed.entry.content.src
 }
+Set-Item -Path Env:Temp -Value ("C:\temp")
 
 if (-not $env:TEMP) {
-    Set-Item -Path Env:Temp -Value ("C:\temp")
     $env:TEMP = Join-Path $env:SystemDrive -ChildPath 'temp'
 }
 
